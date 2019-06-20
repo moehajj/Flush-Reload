@@ -30,11 +30,12 @@
 #define CYCLES uint32_t
 
 #define CHANNEL_DEFAULT_INTERVAL        0x00008000
-#define DEFAULT_FILE_OFFSET	0x0
-#define DEFAULT_FILE_SIZE	4096
-#define DEFAULT_CACHE_BLOCK_SIZE	64
 #define CHANNEL_SYNC_TIMEMASK           0x000FFFFF
 #define CHANNEL_SYNC_JITTER             0x0100
+
+#define DEFAULT_FILE_OFFSET	0x0
+#define DEFAULT_FILE_SIZE	4096
+#define CACHE_BLOCK_SIZE	64
 #define MAX_BUFFER_LEN	1024
 
 struct state {
@@ -53,6 +54,6 @@ char *string_to_binary(char *s);
 
 char *conv_char(char *data, int size, char *msg);
 
-int init_state(struct state *state, int argc, char **argv);
+void init_state(struct state *state, int argc, char **argv);
 
 #endif

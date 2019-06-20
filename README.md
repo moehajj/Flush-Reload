@@ -13,10 +13,10 @@ Make sure the sender & receiver share the same file and file offset
 
 Sender:
 ```sh
-./sender shared.txt offset
+./sender -f shared.txt -o offset
 ```
 
 Receiver:
 ```sh
-./receiver shared.txt offset
+./receiver -f shared.txt -o offset
 ```

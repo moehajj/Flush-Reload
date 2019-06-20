@@ -101,43 +101,76 @@ char *conv_char(char *data, int size, char *msg)
 }
 
 
+void print_help() {
+
+	printf("-f,\t[REQUIRED] File to be shared between sender/receiver\n"
+		"-o,\t[Optional] Selected offset into shared file\n"
+		"-i,\t[Optional] Time interval for sending a single bit\n");
+
+}
+
 /*
  * Parses the arguments and flags of the program and initializes the struct state
  * with those parameters (or the default ones if no custom flags are given).
  */
-int init_state(struct state *state, int argc, char **argv)
+void init_state(struct state *state, int argc, char **argv)
 {
 
-	if (argc<2) {
-		return -1;
-	}
-
-	// This number may need to be tuned up to the specific machine in use
-	// NOTE: Make sure that interval is the same in both sender and receiver
-	state->interval = CHANNEL_DEFAULT_INTERVAL;
-
 	int offset = DEFAULT_FILE_OFFSET;
-	if (argc>2) {
-		offset = atoi(argv[2])*64; // inc. in multiples of 64 byte cache line
+	state->interval = CHANNEL_DEFAULT_INTERVAL;
+	char *filename = NULL;
+
+
+	// Parse the command line flags
+	//      -f is used to specify the shared file 
+	//      -i is used to specify the sending interval rate
+	//      -o is used to specify the shared file offset
+	int option;
+	while ((option = getopt(argc, argv, "i:o:f:")) != -1) {
+		switch (option) {
+			case 'i':
+				state->interval = atoi(optarg);
+				break;
+			case 'o':
+				offset = atoi(optarg)*CACHE_BLOCK_SIZE;
+				break;
+			case 'f':
+				filename = optarg;
+				break;
+			case 'h':
+				print_help();
+				exit(1);
+			case '?':
+				fprintf(stderr, "Unknown option character\n");
+				print_help();
+				exit(1);
+			default:
+				print_help();
+				exit(1);
+		}
 	}
 
-	int inFile = open(argv[1], O_RDONLY);
-	if(inFile == -1) {
-		printf("Failed to Open File\n");
-		return -1;
+	if (filename != NULL) {
+		int inFile = open(filename, O_RDONLY);
+		if(inFile == -1) {
+			printf("Failed to Open File\n");
+			exit(1);
+		}
+
+		void *mapaddr = mmap(NULL,DEFAULT_FILE_SIZE,PROT_READ,MAP_SHARED,inFile,0);
+		printf("File mapped at %p\n",mapaddr);
+
+		if (mapaddr == (void*) -1 ) {
+			printf("Failed to Map Address\n");
+			exit(1);
+		}
+
+		state->addr = (ADDR_PTR) mapaddr + offset;
+		printf("Address Flushing = %lx\n",state->addr);
+
+	} else {
+		print_help();
+		exit(1);
 	}
-
-	void *mapaddr = mmap(NULL,DEFAULT_FILE_SIZE,PROT_READ,MAP_SHARED,inFile,0);
-	printf("File mapped at %p\n",mapaddr);
-
-	if (mapaddr == (void*) -1 ) {
-		printf("Failed to Map Address\n");
-		return -1;
-	}
-
-	state->addr = (ADDR_PTR) mapaddr + offset;
-	printf("Address Flushing = %lx\n",state->addr);
-
-	return 0;
 }
 
