@@ -21,6 +21,7 @@ CYCLES measure_one_block_access_time(ADDR_PTR addr)
     return cycles;
 }
 
+extern inline __attribute__((always_inline))
 CYCLES rdtscp(void) {
 	CYCLES cycles;
 	asm volatile ("rdtscp"
@@ -29,34 +30,21 @@ CYCLES rdtscp(void) {
 	return cycles;
 }
 
-/*
- * Computes base to the exp.
- */
-int ipow(int base, int exp)
-{
-    int result = 1;
-    while (exp) {
-        if (exp & 1)
-            result *= base;
-        exp >>= 1;
-        base *= base;
-    }
-
-    return result;
+inline CYCLES get_time() {
+    return rdtscp();
 }
 
-/*
- * Returns the 10 bits cache set index of a given address.
- */
-uint64_t get_cache_set_index(ADDR_PTR phys_addr)
-{
-    uint64_t mask = ((uint64_t) 1 << 16) - 1;
-    return (phys_addr & mask) >> 6;
+extern inline __attribute__((always_inline))
+CYCLES cc_sync() {
+    while((get_time() & CHANNEL_SYNC_TIMEMASK) > CHANNEL_SYNC_JITTER) {}
+    return get_time();
 }
+
 
 /*
  * CLFlushes the given address.
  */
+extern inline __attribute__((always_inline))
 void clflush(ADDR_PTR addr)
 {
     asm volatile ("clflush (%0)"::"r"(addr));
@@ -112,27 +100,44 @@ char *conv_char(char *data, int size, char *msg)
     return msg;
 }
 
+
 /*
- * Appends the given string to the linked list which is pointed to by the given head
+ * Parses the arguments and flags of the program and initializes the struct state
+ * with those parameters (or the default ones if no custom flags are given).
  */
-void append_string_to_linked_list(struct Node **head, ADDR_PTR addr)
+int init_state(struct state *state, int argc, char **argv)
 {
-    struct Node *current = *head;
 
-    // Create the new node to append to the linked list
-    struct Node *new_node = malloc(sizeof(*new_node));
-    new_node->addr = addr;
-    new_node->next = NULL;
+	if (argc<2) {
+		return -1;
+	}
 
-    // If the linked list is empty, just make the head to be this new node
-    if (current == NULL)
-        *head = new_node;
+	// This number may need to be tuned up to the specific machine in use
+	// NOTE: Make sure that interval is the same in both sender and receiver
+	state->interval = CHANNEL_DEFAULT_INTERVAL;
 
-        // Otherwise, go till the last node and append the new node after it
-    else {
-        while (current->next != NULL)
-            current = current->next;
+	int offset = DEFAULT_FILE_OFFSET;
+	if (argc>2) {
+		offset = atoi(argv[2])*64; // inc. in multiples of 64 byte cache line
+	}
 
-        current->next = new_node;
-    }
+	int inFile = open(argv[1], O_RDONLY);
+	if(inFile == -1) {
+		printf("Failed to Open File\n");
+		return -1;
+	}
+
+	void *mapaddr = mmap(NULL,DEFAULT_FILE_SIZE,PROT_READ,MAP_SHARED,inFile,0);
+	printf("File mapped at %p\n",mapaddr);
+
+	if (mapaddr == (void*) -1 ) {
+		printf("Failed to Map Address\n");
+		return -1;
+	}
+
+	state->addr = (ADDR_PTR) mapaddr + offset;
+	printf("Address Flushing = %lx\n",state->addr);
+
+	return 0;
 }
+

@@ -1,48 +1,5 @@
 #include "util.h"
 
-int global_offset = 0;
-
-/*
- * Parses the arguments and flags of the program and initializes the struct state
- * with those parameters (or the default ones if no custom flags are given).
- */
-int init_state(struct state *state, int argc, char **argv)
-{
-	if (argc<2) {
-		return -1;
-	}   
-
-	// These numbers may need to be tuned up to the specific machine in use
-	// NOTE: Make sure that interval is the same in both sender and receiver
-	state->interval = (uint32_t) 1<<15;
-	state->wait_cycles_between_measurements = 0;
-
-	int offset = 0;
-	if (argc>2) {
-		offset = 64*atoi(argv[2]);
-	}
-
-	int inFile = open(argv[1],O_RDONLY);
-	if (inFile == -1) {
-		printf("Failed to Open File\n");
-		return -1;
-	}	
-
-	int size = 4096;
-	void *mapaddr = mmap(NULL, size, PROT_READ, MAP_SHARED, inFile, 0);
-	printf("File mapped at %p\n", mapaddr);
-
-	if (mapaddr == (void*) -1 ) {
-		printf("Failed to Map Address\n");
-		return -1;
-	}
-		
-	state->addr = (ADDR_PTR) mapaddr + offset; 	
-	printf("Address Flushing = %lx\n",state->addr);
-
-	return 0;
-}
-
 /*
  * Detects a bit by repeatedly measuring the access time of the addresses in the
  * probing set and counting the number of misses for the clock length of state->interval.
@@ -52,10 +9,6 @@ int init_state(struct state *state, int argc, char **argv)
  */
 bool detect_bit(struct state *state, bool first_bit)
 {
-	uint32_t mask = ((uint32_t) 1<<20) - 1;
-	uint32_t threshold = (uint32_t) 1<<8;
-	while((rdtscp() & mask) > threshold);
-
 	int misses = 0;
 	int hits = 0;
 	int total_measurements = 0;
@@ -64,7 +17,7 @@ bool detect_bit(struct state *state, bool first_bit)
 	// usually cause an access time larger than 150 cycles
 	int misses_time_threshold = 70;
 
-	CYCLES start_t = rdtscp();
+	CYCLES start_t = cc_sync();
 	while ((rdtscp() - start_t) < state->interval) {
 		CYCLES time = measure_one_block_access_time(state->addr); 
 
@@ -79,27 +32,18 @@ bool detect_bit(struct state *state, bool first_bit)
 				hits++;
 			}
 		}
-
-		// Busy loop to give time to the sender to flush the cache
-		CYCLES wait_t = rdtscp();
-		while((rdtscp() - wait_t) < state->wait_cycles_between_measurements &&
-			       (rdtscp() - start_t) < state->interval);
 	}
 
 	bool ret =  misses > (float) total_measurements / 2.0;
 	return ret;
 }
 
-// This is the only hardcoded variable which defines the max size of a message
-// to be the same as the max size of the message in the starter code of the sender.
-static const int max_buffer_len = 128 * 8;
-
 int main(int argc, char **argv)
 {
     // Initialize state and local variables
     struct state state;
     init_state(&state, argc, argv);
-    char msg_ch[max_buffer_len + 1];
+    char msg_ch[MAX_BUFFER_LEN + 1];
     int flip_sequence = 4;
     bool first_time = true;
     bool current;
@@ -136,7 +80,7 @@ int main(int argc, char **argv)
         if (flip_sequence == 0 && current == 1 && previous == 1) {
             int binary_msg_len = 0;
             int strike_zeros = 0;
-            for (int i = 0; i < max_buffer_len; i++) {
+            for (int i = 0; i < MAX_BUFFER_LEN; i++) {
                 binary_msg_len++;
 
                 if (detect_bit(&state, first_time)) {

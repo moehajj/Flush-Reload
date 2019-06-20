@@ -29,39 +29,30 @@
 #define ADDR_PTR uint64_t
 #define CYCLES uint32_t
 
+#define CHANNEL_DEFAULT_INTERVAL        0x00008000
+#define DEFAULT_FILE_OFFSET	0x0
+#define DEFAULT_FILE_SIZE	4096
+#define DEFAULT_CACHE_BLOCK_SIZE	64
+#define CHANNEL_SYNC_TIMEMASK           0x000FFFFF
+#define CHANNEL_SYNC_JITTER             0x0100
+#define MAX_BUFFER_LEN	1024
+
 struct state {
 	ADDR_PTR addr;
 	int interval;
-	int wait_cycles_between_measurements;
-};
-
-struct Node {
-    ADDR_PTR addr;
-    struct Node *next;
 };
 
 CYCLES measure_one_block_access_time(ADDR_PTR addr);
 CYCLES rdtscp(void);
-
+CYCLES get_time();
+CYCLES cc_sync();
+ 
 void clflush(ADDR_PTR addr);
-
-int ipow(int base, int exp);
 
 char *string_to_binary(char *s);
 
 char *conv_char(char *data, int size, char *msg);
 
-uint64_t get_cache_set_index(ADDR_PTR phys_addr);
-
-void append_string_to_linked_list(struct Node **head, ADDR_PTR addr);
-
-// L1 properties
-static const int CACHE_SETS_L1 = 64;
-static const int CACHE_WAYS_L1 = 8;
-
-// L3 properties
-static const int CACHE_SETS_L3 = 8192;
-static const int CACHE_WAYS_L3 = 16;
-static const int CACHE_SLICES_L3 = 8;
+int init_state(struct state *state, int argc, char **argv);
 
 #endif
