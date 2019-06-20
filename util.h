@@ -1,10 +1,3 @@
-
-// You may only use fgets() to pull input from stdin
-// You may use any print function to stdout to print 
-// out chat messages
-//
-// You may use memory allocators and helper functions
-// (e.g., rand()).  You may not use system().
 #include <stdio.h>
 #include <stdint.h>
 #include <stdbool.h>
@@ -38,7 +31,8 @@
 #define CACHE_BLOCK_SIZE	64
 #define MAX_BUFFER_LEN	1024
 
-struct state {
+
+struct config {
 	ADDR_PTR addr;
 	int interval;
 };
@@ -54,6 +48,6 @@ char *string_to_binary(char *s);
 
 char *conv_char(char *data, int size, char *msg);
 
-void init_state(struct state *state, int argc, char **argv);
+void init_config(struct config *config, int argc, char **argv);
 
 #endif

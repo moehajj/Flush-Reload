@@ -1,7 +1,9 @@
 
 #include "util.h"
 
-/* Measure the time it takes to access a block with virtual address addr. */
+/*
+ * Loads from virtual address addr and measure the access time
+ */
 CYCLES measure_one_block_access_time(ADDR_PTR addr)
 {
     CYCLES cycles;
@@ -21,6 +23,9 @@ CYCLES measure_one_block_access_time(ADDR_PTR addr)
     return cycles;
 }
 
+/* 
+ * Returns Time Stamp Counter 
+ */
 extern inline __attribute__((always_inline))
 CYCLES rdtscp(void) {
 	CYCLES cycles;
@@ -30,10 +35,18 @@ CYCLES rdtscp(void) {
 	return cycles;
 }
 
+/* 
+ * Gets the value Time Stamp Counter 
+ */
 inline CYCLES get_time() {
     return rdtscp();
 }
 
+/* Synchronizes at the overflow of a counter
+ *
+ * Counter is created by masking the lower bits of the Time Stamp Counter
+ * Sync done by spinning until the counter is less than CHANNEL_SYNC_JITTER
+ */
 extern inline __attribute__((always_inline))
 CYCLES cc_sync() {
     while((get_time() & CHANNEL_SYNC_TIMEMASK) > CHANNEL_SYNC_JITTER) {}
@@ -42,7 +55,7 @@ CYCLES cc_sync() {
 
 
 /*
- * CLFlushes the given address.
+ * Flushes the cache block accessed by a virtual address out of the cache
  */
 extern inline __attribute__((always_inline))
 void clflush(ADDR_PTR addr)
@@ -100,7 +113,9 @@ char *conv_char(char *data, int size, char *msg)
     return msg;
 }
 
-
+/*
+ * Prints help menu
+ */
 void print_help() {
 
 	printf("-f,\t[REQUIRED] File to be shared between sender/receiver\n"
@@ -110,14 +125,14 @@ void print_help() {
 }
 
 /*
- * Parses the arguments and flags of the program and initializes the struct state
+ * Parses the arguments and flags of the program and initializes the struct config
  * with those parameters (or the default ones if no custom flags are given).
  */
-void init_state(struct state *state, int argc, char **argv)
+void init_config(struct config *config, int argc, char **argv)
 {
-
+	// Initialize default config parameters
 	int offset = DEFAULT_FILE_OFFSET;
-	state->interval = CHANNEL_DEFAULT_INTERVAL;
+	config->interval = CHANNEL_DEFAULT_INTERVAL;
 	char *filename = NULL;
 
 
@@ -129,7 +144,7 @@ void init_state(struct state *state, int argc, char **argv)
 	while ((option = getopt(argc, argv, "i:o:f:")) != -1) {
 		switch (option) {
 			case 'i':
-				state->interval = atoi(optarg);
+				config->interval = atoi(optarg);
 				break;
 			case 'o':
 				offset = atoi(optarg)*CACHE_BLOCK_SIZE;
@@ -150,6 +165,7 @@ void init_state(struct state *state, int argc, char **argv)
 		}
 	}
 
+	// Map file to virtual memory and extract the address at the file offset
 	if (filename != NULL) {
 		int inFile = open(filename, O_RDONLY);
 		if(inFile == -1) {
@@ -158,16 +174,13 @@ void init_state(struct state *state, int argc, char **argv)
 		}
 
 		void *mapaddr = mmap(NULL,DEFAULT_FILE_SIZE,PROT_READ,MAP_SHARED,inFile,0);
-		printf("File mapped at %p\n",mapaddr);
 
 		if (mapaddr == (void*) -1 ) {
 			printf("Failed to Map Address\n");
 			exit(1);
 		}
 
-		state->addr = (ADDR_PTR) mapaddr + offset;
-		printf("Address Flushing = %lx\n",state->addr);
-
+		config->addr = (ADDR_PTR) mapaddr + offset;
 	} else {
 		print_help();
 		exit(1);
