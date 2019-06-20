@@ -1,4 +1,4 @@
-# ISCA'19 - flush-reload-example
+# Fush-Reload Covert Channel
 
 ## Compile
 
