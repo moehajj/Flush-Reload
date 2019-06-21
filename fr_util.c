@@ -118,9 +118,9 @@ char *conv_char(char *data, int size, char *msg)
  */
 void print_help() {
 
-	printf("-f,\t[REQUIRED] File to be shared between sender/receiver\n"
-		"-o,\t[Optional] Selected offset into shared file\n"
-		"-i,\t[Optional] Time interval for sending a single bit\n");
+	printf("-f,\tFile to be shared between sender/receiver\n"
+		"-o,\tSelected offset into shared file\n"
+		"-i,\tTime interval for sending a single bit\n");
 
 }
 
@@ -133,7 +133,7 @@ void init_config(struct config *config, int argc, char **argv)
 	// Initialize default config parameters
 	int offset = DEFAULT_FILE_OFFSET;
 	config->interval = CHANNEL_DEFAULT_INTERVAL;
-	char *filename = NULL;
+	char *filename = DEFAULT_FILE_NAME;
 
 
 	// Parse the command line flags
@@ -181,9 +181,6 @@ void init_config(struct config *config, int argc, char **argv)
 		}
 
 		config->addr = (ADDR_PTR) mapaddr + offset;
-	} else {
-		print_help();
-		exit(1);
 	}
 }
 
