@@ -2,18 +2,18 @@ CFLAGS=-O0 -I /usr/local
 CC=gcc
 
 TARGETS=receiver
-UTILS=util.o 
+UTILS=fr_util.o 
 
 all: $(TARGETS)
 
 $(UTILS): %.o: %.c %.h
 	$(CC) $(CFLAGS) -c $<
 
-%.o: %.c util.h
+%.o: %.c fr_util.h
 	$(CC) $(CFLAGS)  -c $< 
 
 
-$(TARGETS): %:%.o util.o
+$(TARGETS): %:%.o fr_util.o
 	$(CC) $(CFLAGS) $^ -o $@
 
 
