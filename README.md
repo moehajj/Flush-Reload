@@ -20,6 +20,3 @@ Receiver:
 ```sh
 ./receiver -f shared.txt -o offset
 ```
-
-## References
-Adapted from the [deaddrop](https://github.com/ricpacca/deaddrop) covert channel.

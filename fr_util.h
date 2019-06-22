@@ -26,7 +26,7 @@
 #define CHANNEL_SYNC_TIMEMASK           0x000FFFFF
 #define CHANNEL_SYNC_JITTER             0x0100
 
-#define DEFAULT_FILE_NAME "/bin/ls"
+#define DEFAULT_FILE_NAME "/usr/share/file.txt"
 #define DEFAULT_FILE_OFFSET	0x0
 #define DEFAULT_FILE_SIZE	4096
 #define CACHE_BLOCK_SIZE	64
