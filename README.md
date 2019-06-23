@@ -15,7 +15,7 @@ You will find the sender & receiver executables in the '/build/bin' directory.
 Make sure the sender & receiver share the same file and file offset.
 Note: the shared file should not be empty.
 
-# With default parameters
+### With default parameters
 Sender:
 ```sh
 ./sender -f shared.txt -o offset
@@ -26,7 +26,7 @@ Receiver:
 ./receiver -f shared.txt -o offset
 ```
 
-# Specifying the shared file and offset
+### Specifying the shared file and offset
 Sender:
 ```sh
 ./sender -f shared.txt -o offset
