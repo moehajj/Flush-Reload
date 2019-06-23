@@ -18,12 +18,12 @@ Note: the shared file should not be empty.
 ### With default parameters
 Sender:
 ```sh
-./sender -f shared.txt -o offset
+./sender
 ```
 
 Receiver:
 ```sh
-./receiver -f shared.txt -o offset
+./receiver
 ```
 
 ### Specifying the shared file and offset
