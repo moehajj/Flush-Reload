@@ -21,14 +21,11 @@ bool detect_bit(struct config *config)
 		// Load data from config->addr and measure latency
 		CYCLES access_time = measure_one_block_access_time(config->addr); 
 
-		// Ignore access times larger than 1000 cycles usually due to a disk miss.
-		if (access_time < 1000) {
-			// Count if it's a miss or hit depending on latency
-			if (access_time > CACHE_MISS_LATENCY) {
-				misses++;
-			} else {
-				hits++;
-			}
+		// Count if it's a miss or hit depending on latency
+		if (access_time > CACHE_MISS_LATENCY) {
+			misses++;
+		} else {
+			hits++;
 		}
 	}
 
@@ -41,17 +38,19 @@ int main(int argc, char **argv)
 	struct config config;
 	init_config(&config, argc, argv);
 	char msg_ch[MAX_BUFFER_LEN + 1];
-	int flip_sequence = 4;
-	bool current;
-	bool previous = true;
 
+	uint32_t bitSequence = 0;
+	uint32_t sequenceMask = ((uint32_t) 1<<6) - 1;
+	uint32_t expSequence = 0b101011;
+	
 	printf("Listening...\n");
 	fflush(stdout);
 	while (1) {
-		current = detect_bit(&config);
-	
+		bool bitReceived = detect_bit(&config);
+
 		// Detect the sequence '101011' that indicates sender is sending a message	
-		if (flip_sequence == 0 && current == 1 && previous == 1) {
+		bitSequence = ((uint32_t) bitSequence<<1) | bitReceived;
+		if ((bitSequence & sequenceMask) == expSequence) {
 			int binary_msg_len = 0;
 			int strike_zeros = 0;
 			for (int i = 0; i < MAX_BUFFER_LEN; i++) {
@@ -78,14 +77,7 @@ int main(int argc, char **argv)
 			if (strcmp(msg, "exit") == 0) {
 				break;
 			}
-
-		} else if (flip_sequence > 0 && current != previous) {
-			flip_sequence--;
-		} else if (current == previous) {
-			flip_sequence = 4;
 		}
-
-		previous = current;
 	}
 
 	printf("Receiver finished\n");
